@@ -37,3 +37,11 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# Output
+*.html
+data/shark_download/*.tsv
+data/shark_chlorophyll/*.txt
+data/shark_physchem/*.txt
+data/shark_phytoplankton/*.txt
+data/shark_picoplankton/*.txt

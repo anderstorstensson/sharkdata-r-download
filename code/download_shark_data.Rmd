@@ -1,0 +1,372 @@
+---
+title: "Download SHARKdata"
+author: "Anders Torstensson"
+date: '2022-03-10'
+params:
+  shark_datasets: "list_of_datasets.txt"
+  shark_species: "shark_species_list.txt"
+  shark_translate: "translate_headers.txt"
+  shark_translate_station_names: "station.txt"
+  encoding: "utf8"
+output: html_document
+---
+
+This script will download the data packages listed in "data/shark_download/list_of_datasets.txt" from Sharkdata (https://sharkdata.smhi.se/) when you click **Knit**. The script will cache previous downloads, and will only update them if the data packages has been changed on Sharkdata.
+
+## R Settings
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(jsonlite)
+library(plyr)
+library(tidyverse)
+
+sharkDir = "../data/shark_download"
+phytoplanktonDir = "../data/shark_phytoplankton"
+picoplanktonDir = "../data/shark_picoplankton"
+physchemDir = "../data/shark_physchem"
+chlorophyllDir = "../data/shark_chlorophyll"
+```
+
+## Setup SHARKdata cache validation
+
+```{r shark_cache_setup, echo=FALSE}
+list_of_dataset = read.delim(file.path(sharkDir, params$shark_datasets), sep = "\t", header = TRUE)
+
+datasets = fromJSON('https://sharkdata.smhi.se/datasets/list.json') %>%
+  filter(dataset_name %in% list_of_dataset$dataset)
+
+datasets_cache = c()
+
+for(i in 1:length(unique(datasets$datatype))) {
+  datasets_cache = tryCatch({
+    rbind(datasets_cache, 
+          read.table(file.path(sharkDir, tolower(paste0("cached_", unique(datasets$datatype)[i], "_datasets.tsv"))), header = TRUE))
+    },
+    error = function(error) {
+      datasets_cache = datasets_cache
+    },
+    warning = function(warning) {
+      datasets_cache = datasets_cache
+      }
+    )
+}
+
+for(i in 1:length(unique(datasets$datatype))) {
+  datasets_datatype = datasets %>%
+    filter(datatype == unique(datatype)[i])
+  
+  if (!all(datasets_datatype$dataset_file_name %in% datasets_cache$dataset_file_name)) {
+    
+    write.table(datasets_datatype, file.path(sharkDir, tolower(paste0("cached_", unique(datasets_datatype$datatype), "_datasets.tsv"))), sep = "\t", row.names = F)
+    
+    print(paste0(unique(datasets_datatype$datatype), "-data has been updated since last download, will download a new version"))
+    
+    } else {
+      print(paste0(unique(datasets_datatype$datatype), " datasets are up to date, no need to download a new version!"))
+    }
+}
+```
+
+## Download physchem data from SHARKdata 
+
+```{r download_physchem_data, echo=FALSE, cache=TRUE, cache.extra=file.mtime(file.path(sharkDir, "cached_physicalchemical_datasets.tsv"))}
+datasets_physchem = datasets %>%
+  filter(datatype == "PhysicalChemical")
+
+years_physchem = str_extract_all(datasets_physchem$dataset_name, "\\d{4}", simplify = T)
+
+download_date_physchem = Sys.Date()
+
+if(nrow(datasets_physchem) > 0) {
+  data_shark_physchem_wide = data.frame()
+  
+  for(i in 1:nrow(datasets_physchem)) {
+    temp = tempfile()
+    
+    download.file(paste("https://sharkdata.smhi.se/datasets/", datasets_physchem$dataset_name[i], "/shark_archive.zip", sep = ""), temp, mode="wb")
+    
+    data_ix = read.delim(unz(temp, "processed_data\\data.txt"))
+    
+    data_ix$dataset_name = datasets_physchem$dataset_name[i]
+    
+    data_shark_physchem_wide = plyr::rbind.fill(data_shark_physchem_wide, data_ix)
+  }
+}
+
+# Convert DM to DD
+
+coordinates = data_shark_physchem_wide %>%
+  select(LATIT, LONGI)
+
+f = function(x) as.double(substr(x, 1, 2)) + as.double(substring(x, 3)) / 60
+
+coordinates = sapply(coordinates, f)
+
+data_shark_physchem_wide$LATIT = coordinates[,1]
+data_shark_physchem_wide$LONGI = coordinates[,2]
+
+data_shark_physchem_wide = data_shark_physchem_wide %>%
+  dplyr::rename("LATIT_DD" = LATIT,
+                "LONGI_DD" = LONGI)
+
+# Rename headers to internal names
+
+translate_headers = read.delim(file.path(sharkDir, params$shark_translate), sep = "\t", header = TRUE)
+
+names(data_shark_physchem_wide) = gsub("\\.", "-", names(data_shark_physchem_wide))
+
+for(i in 1:nrow(translate_headers)) {
+  names(data_shark_physchem_wide) = gsub(paste0("\\b", translate_headers$short[i], "\\b"), 
+                                         translate_headers$internal_key[i], 
+                                         names(data_shark_physchem_wide))
+}
+
+# Translate station names
+
+coordinates = data_shark_physchem_wide %>%
+  select(station_name, sample_latitude_dd, sample_longitude_dd) %>%
+  distinct()
+
+station_names = data.frame(unique(data_shark_physchem_wide$station_name)) %>%
+  dplyr::rename(station_name = unique.data_shark_physchem_wide.station_name.) %>%
+  mutate(official_name = station_name) %>%
+  left_join(coordinates) 
+
+station_names[station_names==""]<-NA
+
+station_names = station_names %>%
+  filter(!is.na(station_name))
+
+translate_stations = read_delim(file.path(sharkDir, params$shark_translate_station_names), 
+                                locale = locale(encoding = "windows-1252")) 
+
+for(i in 1:nrow(station_names)) {
+  if(!is.na(station_names$station_name[i])) {
+    translate_stations_ix = translate_stations[grep(paste0("\\b",station_names$station_name[i],"\\b"), 
+                                                  strsplit(translate_stations$SYNONYM_NAMES, 
+                                                           split = "<or>")),] 
+  
+  # Select the closest station match
+  translate_stations_ix = translate_stations_ix %>%
+    arrange(station_names$sample_latitude_dd[i] - LATITUDE_WGS84_SWEREF99_DD,
+            station_names$sample_longitude_dd[i] - LONGITUDE_WGS84_SWEREF99_DD) %>%
+    slice(1)
+  
+  if(nrow(translate_stations_ix) > 0) {
+        station_names$official_name[i] = translate_stations_ix$STATION_NAME
+  }
+  }
+}
+
+data_shark_physchem_wide = data_shark_physchem_wide %>%
+  left_join(station_names) %>%
+  dplyr::rename("reported_station_name" = station_name) %>%
+  dplyr::rename("station_name" = official_name) %>%
+  relocate(station_name, .before = reported_station_name)
+
+if(nrow(datasets_physchem) > 0) {
+  data_shark_physchem_long = data.frame()
+  
+  for(i in 1:nrow(datasets_physchem)) {
+    temp = tempfile()
+    
+    download.file(paste("https://sharkdata.smhi.se/datasets/", datasets_physchem$dataset_name[i], "/shark_archive.zip", sep = ""), temp, mode="wb")
+    
+    data_ix = read.delim(unz(temp, "shark_data.txt"))
+    
+    data_shark_physchem_long = plyr::rbind.fill(data_shark_physchem_long, data_ix)
+  }
+}
+```
+
+## Download phytoplankton data from SHARKdata 
+
+```{r download_phytoplankton_data, echo=FALSE, cache=TRUE, cache.extra=file.mtime(file.path(sharkDir, "cached_phytoplankton_datasets.tsv"))}
+datasets_phytoplankton = datasets %>%
+  filter(datatype == "Phytoplankton")
+
+years_phytoplankton = str_extract_all(datasets_phytoplankton$dataset_name, "\\d{4}", simplify = T)
+
+download_date_phytoplankton = Sys.Date()
+
+if(nrow(datasets_phytoplankton) > 0) {
+  data_shark_phytoplankton = data.frame()
+  
+  for(i in 1:nrow(datasets_phytoplankton)) {
+    temp = tempfile()
+    
+    download.file(paste("https://sharkdata.smhi.se/datasets/", datasets_phytoplankton$dataset_name[i], "/shark_archive.zip", sep = ""), temp, mode="wb")
+    
+    data_ix = read.delim(unz(temp, "shark_data.txt"))
+    
+    data_shark_phytoplankton = plyr::rbind.fill(data_shark_phytoplankton, data_ix)
+  }
+}
+
+# Get taxonomic information
+
+shark_species_list = read.delim(file.path(sharkDir, params$shark_species), sep = "\t", header = TRUE) %>%
+  dplyr::select(Taxon.id,
+         Klass,
+         Ordning,
+         Familj,
+         Släkte,
+         ) %>%
+  dplyr::rename(dyntaxa_id=Taxon.id,
+               "taxon_class" = Klass,
+               "taxon_order" = Ordning,
+               "taxon_family" = Familj,
+               "taxon_genus" = Släkte)
+
+data_shark_phytoplankton = data_shark_phytoplankton %>%
+  left_join(shark_species_list)
+```
+
+## Download picoplankton data from SHARKdata 
+
+```{r download_picoplankton_data, echo=FALSE, cache=TRUE, cache.extra=file.mtime(file.path(sharkDir, "cached_picoplankton_datasets.tsv"))}
+datasets_picoplankton = datasets %>%
+  filter(datatype == "Picoplankton")
+
+years_picoplankton = str_extract_all(datasets_picoplankton$dataset_name, "\\d{4}", simplify = T)
+
+download_date_picoplankton = Sys.Date()
+
+if(nrow(datasets_picoplankton) > 0) {
+  data_shark_picoplankton = data.frame()
+  
+  for(i in 1:nrow(datasets_picoplankton)) {
+    temp = tempfile()
+    
+    download.file(paste("https://sharkdata.smhi.se/datasets/", datasets_picoplankton$dataset_name[i], "/shark_archive.zip", sep = ""), temp, mode="wb")
+    
+    data_ix = read.delim(unz(temp, "shark_data.txt"))
+    
+    data_shark_picoplankton = plyr::rbind.fill(data_shark_picoplankton, data_ix)
+  }
+}
+```
+
+## Download chlorophyll data from SHARKdata 
+
+```{r download_chlorophyll_data, echo=FALSE, cache=TRUE, cache.extra=file.mtime(file.path(sharkDir, "cached_chlorophyll_datasets.tsv"))}
+datasets_chlorophyll = datasets %>%
+  filter(datatype == "Chlorophyll")
+
+years_chlorophyll = str_extract_all(datasets_chlorophyll$dataset_name, "\\d{4}", simplify = T)
+
+download_date_chlorophyll = Sys.Date()
+
+if(nrow(datasets_chlorophyll) > 0) {
+  data_shark_chlorophyll = data.frame()
+  
+  for(i in 1:nrow(datasets_chlorophyll)) {
+    temp = tempfile()
+    
+    download.file(paste("https://sharkdata.smhi.se/datasets/", datasets_chlorophyll$dataset_name[i], "/shark_archive.zip", sep = ""), temp, mode="wb")
+    
+    data_ix = read.delim(unz(temp, "shark_data.txt"))
+    
+    data_shark_chlorophyll = plyr::rbind.fill(data_shark_chlorophyll, data_ix)
+  }
+}
+```
+
+## Write data files
+
+```{r write_data, echo=FALSE}
+write.table(data_shark_physchem_wide, 
+            file.path(physchemDir, 
+                      paste("physical_chemical_wide_", 
+                            min(years_physchem), 
+                            "_", 
+                            max(years_physchem), 
+                            "_", 
+                            download_date_physchem, 
+                            "_", 
+                            params$encoding, 
+                            ".txt", 
+                            sep = "")), 
+            na = "",
+            sep = "\t", 
+            fileEncoding = params$encoding,
+            row.names = F)
+
+write.table(data_shark_physchem_long, 
+            file.path(physchemDir, 
+                      paste("physical_chemical_long_", 
+                            min(years_physchem), 
+                            "_", 
+                            max(years_physchem), 
+                            "_", 
+                            download_date_physchem, 
+                            "_", 
+                            params$encoding, 
+                            ".txt", 
+                            sep = "")), 
+            na = "",
+            sep = "\t", 
+            fileEncoding = params$encoding,
+            row.names = F)
+
+write.table(data_shark_phytoplankton, 
+            file.path(phytoplanktonDir, 
+                      paste("phytoplankton_",
+                            min(years_phytoplankton), 
+                            "_", 
+                            max(years_phytoplankton), 
+                            "_", 
+                            download_date_phytoplankton, 
+                            "_",
+                            params$encoding, 
+                            ".txt", 
+                            sep = "")), 
+            na = "",
+            sep = "\t", 
+            fileEncoding = params$encoding,
+            row.names = F)
+
+write.table(data_shark_picoplankton, 
+            file.path(picoplanktonDir, 
+                      paste("picoplankton_", min(years_picoplankton), 
+                            "_", 
+                            max(years_picoplankton), 
+                            "_", 
+                            download_date_picoplankton, 
+                            "_", 
+                            params$encoding, 
+                            ".txt", 
+                            sep = "")), 
+            na = "",
+            sep = "\t", 
+            fileEncoding = params$encoding,
+            row.names = F)
+
+write.table(data_shark_chlorophyll, 
+            file.path(chlorophyllDir, 
+                      paste("chlorophyll_", 
+                            min(years_chlorophyll), 
+                            "_", 
+                            max(years_chlorophyll), 
+                            "_", 
+                            download_date_chlorophyll, 
+                            "_", 
+                            params$encoding, 
+                            ".txt", 
+                            sep = "")), 
+            na = "",
+            sep = "\t", 
+            fileEncoding = params$encoding,
+            row.names = F)
+```
+
+### Reproducibility
+
+```{r reproducibility}
+# Date time
+Sys.time()
+# Here we store the session info for this script
+sessioninfo::session_info()
+```
