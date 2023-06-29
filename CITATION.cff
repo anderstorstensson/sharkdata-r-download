@@ -4,7 +4,7 @@ authors:
 - family-names: "Torstensson"
   given-names: "Anders"
   orcid: "https://orcid.org/0000-0002-8283-656X"
-title: "Download data from SHARKdata using R"
+title: "Download data from the SHARKdata API (https://sharkdata.smhi.se/) using R"
 version: 1.0
 doi: 10.5281/zenodo.8096048
 date-released: 2023-06-29
