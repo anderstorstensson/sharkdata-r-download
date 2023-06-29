@@ -39,7 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 # Output
-*.html
+code/*.html
 data/shark_download/*.tsv
 data/shark_chlorophyll/*.txt
 data/shark_physchem/*.txt
