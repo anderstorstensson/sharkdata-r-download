@@ -1,0 +1,9 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Torstensson
+    given-names: Anders
+    orcid: https://orcid.org/0000-0002-8283-656X
+title: anderstorstensson/sharkdata-r-download: Release v1.0
+version: v1.0
+date-released: 2023-06-29
