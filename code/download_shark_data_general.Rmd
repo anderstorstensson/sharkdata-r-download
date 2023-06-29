@@ -5,14 +5,13 @@ date: '2022-03-10'
 params:
   shark_datasets: "list_of_datasets.txt"
   shark_species: "shark_species_list.txt"
-  worms_species: "taxa_worms.txt"
   shark_translate: "translate_headers.txt"
-  shark_translate_station_names: "translate_station_names.txt"
+  shark_translate_station_names: "station.txt"
   encoding: "utf8"
 output: html_document
 ---
 
-This script will download the data packages listed in "list_of_datasets.txt" from Sharkdata (https://sharkdata.smhi.se/) when you click **Knit**. The script will cache previous downloads, and will only update them if the data packages has been changed on Sharkdata.
+This script will download the data packages listed in "data/shark_download/list_of_datasets.txt" from Sharkdata (https://sharkdata.smhi.se/) when you click **Knit**. The script will cache previous downloads, and will only update them if the data packages has been changed on Sharkdata.
 
 ## R Settings
 
@@ -23,11 +22,11 @@ library(jsonlite)
 library(plyr)
 library(tidyverse)
 
-sharkDir = "../../data/shark_download"
-phytoplanktonDir = "../../data/shark_phytoplankton"
-picoplanktonDir = "../../data/shark_picoplankton"
-hydrographyDir = "../../data/shark_hydrography"
-chlorophyllDir = "../../data/shark_chlorophyll"
+sharkDir = "../data/shark_download"
+phytoplanktonDir = "../data/shark_phytoplankton"
+picoplanktonDir = "../data/shark_picoplankton"
+physchemDir = "../data/shark_physchem"
+chlorophyllDir = "../data/shark_chlorophyll"
 ```
 
 ## Setup SHARKdata cache validation
@@ -112,7 +111,7 @@ data_shark_physchem_wide = data_shark_physchem_wide %>%
   dplyr::rename("LATIT_DD" = LATIT,
                 "LONGI_DD" = LONGI)
 
-# Rename headers
+# Rename headers to internal names
 
 translate_headers = read.delim(file.path(sharkDir, params$shark_translate), sep = "\t", header = TRUE)
 
@@ -124,13 +123,48 @@ for(i in 1:nrow(translate_headers)) {
                                          names(data_shark_physchem_wide))
 }
 
-translate_stations = read_delim(file.path(sharkDir, params$shark_translate_station_names)) %>%
-  mutate(official_name = coalesce(official_name, station_name))
+# Translate station names
+
+coordinates = data_shark_physchem_wide %>%
+  select(station_name, sample_latitude_dd, sample_longitude_dd) %>%
+  distinct()
+
+station_names = data.frame(unique(data_shark_physchem_wide$station_name)) %>%
+  dplyr::rename(station_name = unique.data_shark_physchem_wide.station_name.) %>%
+  mutate(official_name = station_name) %>%
+  left_join(coordinates) 
+
+station_names[station_names==""]<-NA
+
+station_names = station_names %>%
+  filter(!is.na(station_name))
+
+translate_stations = read_delim(file.path(sharkDir, params$shark_translate_station_names), 
+                                locale = locale(encoding = "windows-1252")) 
+
+for(i in 1:nrow(station_names)) {
+  if(!is.na(station_names$station_name[i])) {
+    translate_stations_ix = translate_stations[grep(paste0("\\b",station_names$station_name[i],"\\b"), 
+                                                  strsplit(translate_stations$SYNONYM_NAMES, 
+                                                           split = "<or>")),] 
+  
+  # Select the closest station match
+  translate_stations_ix = translate_stations_ix %>%
+    arrange(station_names$sample_latitude_dd[i] - LATITUDE_WGS84_SWEREF99_DD,
+            station_names$sample_longitude_dd[i] - LONGITUDE_WGS84_SWEREF99_DD) %>%
+    slice(1)
+  
+  if(nrow(translate_stations_ix) > 0) {
+        station_names$official_name[i] = translate_stations_ix$STATION_NAME
+  }
+  }
+}
 
 data_shark_physchem_wide = data_shark_physchem_wide %>%
-  left_join(translate_stations) %>%
-  dplyr::select(-station_name) %>%
-  dplyr::rename("station_name" = official_name)
+  left_join(station_names) %>%
+  dplyr::rename("reported_station_name" = station_name) %>%
+  dplyr::rename("station_name" = official_name) %>%
+  relocate(station_name, .before = reported_station_name)
 
 if(nrow(datasets_physchem) > 0) {
   data_shark_physchem_long = data.frame()
@@ -173,41 +207,18 @@ if(nrow(datasets_phytoplankton) > 0) {
 
 # Get taxonomic information
 
-# Dyntaxa Info
-
 shark_species_list = read.delim(file.path(sharkDir, params$shark_species), sep = "\t", header = TRUE) %>%
   dplyr::select(Taxon.id,
-                Gällande.namn,
-                Klass,
-                Ordning,
-                Familj,
-                Släkte,
-                ) %>%
+         Klass,
+         Ordning,
+         Familj,
+         Släkte,
+         ) %>%
   dplyr::rename(dyntaxa_id=Taxon.id,
-                "taxon_name" = Gällande.namn,
-                "taxon_class" = Klass,
-                "taxon_order" = Ordning,
-                "taxon_family" = Familj,
-                "taxon_genus" = Släkte)
-
-# WoRMS info
-
-taxa_worms = read.delim(file.path(sharkDir, params$worms_species), sep = "\t", header = TRUE)%>%
-  dplyr::select(aphia_id,
-                scientific_name,
-                class,
-                order,
-                family,
-                genus) %>%
-  dplyr::rename("taxon_name" = scientific_name,
-                "worms_class" = class,
-                "worms_order" = order,
-                "worms_family" = family,
-                "worms_genus" = genus)
-
-shark_species_list = shark_species_list %>%
-  left_join(taxa_worms) %>%
-  select(-taxon_name)
+               "taxon_class" = Klass,
+               "taxon_order" = Ordning,
+               "taxon_family" = Familj,
+               "taxon_genus" = Släkte)
 
 data_shark_phytoplankton = data_shark_phytoplankton %>%
   left_join(shark_species_list)
@@ -267,7 +278,7 @@ if(nrow(datasets_chlorophyll) > 0) {
 
 ```{r write_data, echo=FALSE}
 write.table(data_shark_physchem_wide, 
-            file.path(hydrographyDir, 
+            file.path(physchemDir, 
                       paste("physical_chemical_wide_", 
                             min(years_physchem), 
                             "_", 
@@ -284,7 +295,7 @@ write.table(data_shark_physchem_wide,
             row.names = F)
 
 write.table(data_shark_physchem_long, 
-            file.path(hydrographyDir, 
+            file.path(physchemDir, 
                       paste("physical_chemical_long_", 
                             min(years_physchem), 
                             "_", 

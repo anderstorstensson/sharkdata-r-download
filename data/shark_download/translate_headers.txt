@@ -8,7 +8,6 @@ analysis_date	ANADATE	Analysis date	Analysdatum	AnalysisDate	Bio
 matrix_analysed_code	MATRX	Analysed matrix	Analyserad matris	MatrixAnalysedCode	Bio
 analysed_volume_cm3	ANAVOL	Analysed volume (cm3)	Analyserad volym (cm3)	AnalysedVolume	Bio
 transect_interpretation_time	TRANS_INTERPRET_TIME	Analysed film (MM:SS)	Analyserat filmmaterial (MM:SS)		Bio
-analytical_laboratory_code	ALABO	Analytical laboratory	Analyslaboratorium	AnalyticalLaboratory	Bio/Hyd
 analytical_laboratory_name_sv	ALABO	Analytical laboratory	Analyslaboratorium	AnalyticalLaboratory	Bio
 analytical_laboratory_accreditated	ACKR_ANA	Analytical laboratory accreditated	Analyslaboratorium ackrediterat		Bio
 analysis_method_code	METOA	Method of analysis (code)	Analysmetod (kod)	MethodOfAnalysisCode	Bio
@@ -35,15 +34,14 @@ sample_orderer_name_sv	ORDERER	Orderer	Beställare
 visit_id	VISITID	Visit event identifier	Besöks-ID	VisitId	Bio
 visit_comment	COMNT_VISIT	Sampling event comment	Besökskommentar	VisitComment	Bio/Hyd
 visit_location_id	VISITLOCID	Visit location ID	Besökspositions-ID		Bio/Hyd
+bitemark	BITEMARK	Bite mark (Y/N)	Bitmärke (Y/N)	Bitemark	Bio
 Coloured dissolved organic matter CDOM (1/m)	CDOM	Coloured dissolved organic matter CDOM (1/m)	CDOM (1/m)		Hyd
-Turbidity TURB (FNU)	TURB	Turbidity TURB (FNU)	Turbiditet TURB (FNU)		Hyd
 reported_cell_volume_um3	CEVOL	Cell volume (um3)	Cellens volym (um3)	ReportedCellVolume	Bio
 delivery_datatype	DTYPE	Data type	Datatyp	Datatype	Hyd
 data_holding_centre	DATA_CENTRE	Data holding centre	Datavärd		Bio/Hyd
 detection_limit	DETLI	Detection limit	Detektionsgräns		Bio
 diver_name	DIVER_ID	Diver	Dykare	DiverName	Bio
-dyntaxa_id	DYNTAXA_ID	DyntaxaID	DyntaxaID		Bio
-aphia_id	APHIA_ID	AphiaID	AphiaID		Bio
+dyntaxa_id	DYNTAXA_ID	Swedish taxonomic database ID number	Dyntaxa-ID		Bio
 cause_of_death	CAUSE_OF_DEATH	Cause of death	Dödsorsak	CauseOfDeath	Bio
 detached	DETACHED	Not attached (Y/N)	Ej fastsittande (Y/N)	Detached	Bio
 location_economic_zone	EEZ	Economic zone	Ekonomisk zon		Bio/Hyd
@@ -105,6 +103,7 @@ Lignin (mg/l)	LIGNIN	Lignin (mg/l)	Lignin (mg/l)		Hyd
 insolation_air	INAIR	Insolation air (uE/m2/s)	Ljusinstrålning luft (uE/m2/s)	InsolationAir	Bio
 incubation_radiation_e	INCUR	Incubation radiation (uE/m2/s)	Ljusintensitet inkubation (uE/m2/s)	IncubationRadiation	Bio
 incubation_radiation_w	INCUR2	Incubation radiation (W/m2)	Ljusintensitet inkubation (W/m2)	IncubationRadiationW	Bio
+air_temperature_wet_degc	AIRTEMPWET	Wet-bulb temperature (C)	Luftens våttemperatur (C)		Hyd
 air_temperature_degc	AIRTEMP	Air temperature (C)	Lufttemperatur (C)		Bio
 air_pressure_hpa	AIRPRES	Air pressure (hpa)	Lufttryck (hpa)		Bio
 bottom_slope_deg	SLOPE	Slope (deg)	Lutning (grad)	Slope	Bio
@@ -159,10 +158,6 @@ sampler_area_m2	SAREA	Sampler area (m2)	Provtagar-area (m2)	SamplerArea	Bio
 sampler_type_code	SMTYP	Sampler type	Provtagartyp	SamplerTypeCode	Bio
 sampler_type_code_phyche	SMTYP	Sampler type (phyche)	Provtagartyp (hyd)	SamplerTypeCode	Hyd
 visit_date	SDATE	Sampling date	Provtagningsdatum	VisitDate	Bio/Hyd
-visit_logger_startdate	ST_DATE	Logging period start date	Loggningsperiod startdatum		Bio
-visit_logger_enddate	EN_DATE	Logging period end date	Loggningsperiod slutdatum		Bio
-visit_logger_starttime	ST_TIME	Logging period start time	Loggningsperiod starttid		Bio
-visit_logger_endtime	EN_TIME	Logging period end time	Loggningsperiod sluttid		Bio
 visit_enddate	EDATE	Sampling date (end)	Provtagningsdatum (slut)		Bio/Hyd
 sample_enddate	EDATE	Sampling date (end)	Provtagningsdatum (slut)	SampleEnddate	Hyd
 sample_date	SDATE	Sampling date (start)	Provtagningsdatum (start)	SampleDate	Hyd
@@ -182,7 +177,6 @@ QFLAG Alkalinity_2	Q_ALKY_2	Q-flag Alkalinity_2	Q-flagga Alkalinitet_2		Hyd
 QFLAG Aluminium	Q_AL	Q-flag Aluminium	Q-flagga Aluminium		Hyd
 QFLAG Ammonium NH4-N	Q_AMON	Q-flag Ammonium NH4-N	Q-flagga Ammoniumkväve NH4-N		Hyd
 QFLAG Coloured dissolved organic matter CDOM	Q_CDOM	Q-flag Coloured dissolved organic matter CDOM	Q-flagga CDOM		Hyd
-QFLAG Turbidity TURB	Q_TURB	Q-flag Turbidity TURB	Q-flag Turbiditet TURB		Hyd
 QFLAG Phosphate PO4-P	Q_PHOS	Q-flag Phosphate PO4-P	Q-flagga Fosfatfosfor PO4-P		Hyd
 sample_depth_quality_flag	QDEP	Depth quality flag	Q-flagga för djupuppskattning	DepthQflag	Bio
 secchi_depth_quality_flag	QSEC	Secchi quality flag	Q-flagga för Secchidjup		Bio
@@ -207,7 +201,7 @@ QFLAG Silicate SiO3-Si	Q_SIO3-SI	Q-flag Silicate SiO3-Si	Q-flagga Silikat SiO3-S
 QFLAG Current velocity	Q_CURVEL	Q-flag Current velocity	Q-flagga Strömhastighet		Hyd
 QFLAG Current direction	Q_CURDIR	Q-flag Current direction	Q-flagga Strömriktning		Hyd
 QFLAG Hydrogen sulphide H2S	Q_H2S	Q-flag Hydrogen sulphide H2S	Q-flagga Svavelväte H2S-S		Hyd
-QFLAG Dissolved oxygen O2 CTD	Q_DOXY_CTD	Q-flag Dissolved oxygen O2 CTD	Q-flagga Syrgashalt O2 CTD		Hyd
+QFLAG Dissolved oxygen CTD	Q_DOXY_CTD	Q-flag Dissolved oxygen CTD	Q-flagga Syrgashalt O2 CTD		Hyd
 QFLAG Dissolved oxygen O2 bottle	Q_DOXY_BTL	Q-flag Dissolved oxygen O2 bottle	Q-flagga Syrgashalt O2 vattenhämtare		Hyd
 QFLAG Temperature CTD	Q_TEMP_CTD	Q-flag Temperature CTD	Q-flagga Temperatur CTD		Hyd
 QFLAG Temperature pH Laboratory	Q_PH_LAB_TEMP	Q-flag Temperature pH Laboratory	Q-flagga Temperatur pH Laboratorium		Hyd
@@ -259,7 +253,7 @@ size_min_um	SIZE_MIN	Size min (um)	Storlek min (um)	SpeciesSizeClassMin	Bio
 size_class	SIZCL	Size class	Storleksklass	SpeciesSizeClass	Bio
 size_class_range_max	SIZECLASS_RANGE_MAX	Sizeclass max range	Storleksklass max		Bio
 size_class_range_min	SIZECLASS_RANGE_MIN	Sizeclass min range	Storleksklass min		Bio
-size_class_ref_list_code	SIZRF	Size class reference list	Storleksreferens-lista	SpeciesSizeClassRefListCode	Bio
+size_class_ref_list	SIZRF	Size class reference list	Storleksreferens-lista	SpeciesSizeClassRefListCode	Bio
 stratum_code	STRID	Stratum (code)	Stratum (kod)	StratumCode	Bio
 Current velocity (cm/s)	CURVEL	Current velocity (cm/s)	Strömhastighet (m/s)		Hyd
 Current direction (deca degrees)	CURDIR	Current direction (deca degrees)	Strömriktning (dekagrader)		Hyd
@@ -350,7 +344,8 @@ visit_transect_end_longitude_dd	VISIT_TRANS_LONG_STOP	Transect end longitude (DD
 observation_date	ODATE	Observation date	Observationsdatum		Bio
 observation_time	OTIME	Observation time	Observationstid		Bio
 unanalysed_original_data	UNANA	Unanalysed original data	Oanalyserad originaldata		Bio
-deployed_days_per_month	deployed_days_per_month	Days observed	Observationsdagar		Bio
+deployed_days_per_month	deployed_days_per_month	Deployed days per month	Andel dagar utplacerad per månad		Bio
+replication	REP	Replication	Replikering		Bio
 storage_temperature	STTEMP	Storage temperature	Förvaringstemperatur		Bio
 internal_standard	INTSTD	Internal standard	Intern standard		Bio
 volume_filtered	FILTVOL	Filtered volume	Filtrerad volym		Bio
@@ -380,26 +375,3 @@ C14_batch	BATCH	C14 batch number	C14 batch nummer		Bio
 picotype	PICOPLANKTON_TYPE	Picoplankton type	Picoplankton typ		Bio
 replicate_no	REPLI_NO	Replicate number	Replikatnummer		Bio
 coefficient_fgC_cell	COEFF_C	Coefficient for C calculation (fg C cell-1)	Koefficient för C beräkning (fg C cell-1)		Bio
-oxidized_layer_cm	OXID_L	Oxidized layer (cm)	Oxiderat skikt (cm)		Bio
-age_years	AGE	Age (years)	Ålder (år)		Bio
-body_length_cm	BODY_LENGTH 	Body length (cm)	Kroppslängd (cm)		Bio
-body_weight_kg	BODY_WEIGHT	Body weight (kg)	Kroppsvikt (kg)		Bio
-blubber_thickness_cm	BLUBBER_THICKNESS	Blubber thickness (cm)	Späcktjocklek (cm)		Bio
-autolysis_class	AUTOLYSIS	Autolysis (class)	Autolysis (klass)		Bio
-regional_skin_changes_class	REGIONAL_SKIN_CHANGES	Regional skin changes (class)	Hudförändringar (klass)		Bio
-claw_lesions_class	CLAW_LESIONS	Claw lesions (class)	Kloskada (klass)		Bio
-parodontitis_class	PARODONTITIS	Paradontitis (class)	Tandlossning (klass)		Bio
-cronic_cholangiohepatitis_y_n	CRONIC_CHOLANGIOHEPATITIS	Cronic cholangiohepatitis (Y/N)	Kronisk leverinflammation (Y/N)		Bio
-intestinal_ulcer_class	INTESTINAL_ULCER	Intestinal ulcer (class)	Magsår (klass)		Bio
-pneumonia_y_n	PNEUMONIA	Pneumonia (Y/N)	Lunginflammation (Y/N)		Bio
-arteriosclerosis_class	ARTERIOSCLEROSIS	Arteriosclerosis (class)	Arteriosclerosis (klass)		Bio
-adreno_cort_hyperplasia_class	ADRENO_CORT-HYPERPLASIA	Adreno corto-hyperplasioa (class)	Adreno corto-hyperplasioa (klass)		Bio
-kidney_glomerular_change_class	KIDNEY_GLOMERULAR_CHANGE	Kidney glomerular change (class)	Njure glomerulär föändring (klass)		Bio
-kidney_tubular_hyperplasia_class	KIDNEY_TUBULAR_HYPERPLASIA	Kidney tubular hyperplasia (class)	Njure tubulär hyperplasia (klass)		Bio
-uterus_pregnant_y_n	UTERUS_PREGNANT	Uterus pregnant (Y/N)	Livmoder dräktig (Y/N)		Bio
-uterus_stenosis_occlusion_y_n	UTERUS_STENOSIS_OCCLUSION	Uterus stenosis occlusion (class)	Livmoder stenosis occlusion (Y/N)		Bio
-uterus_tumour_y_n	UTERUS_TUMOUR	Uterus tumour (Y/N)	Livmodertumör (Y/N)		Bio
-bvol_scientific_name	UPDATED_SCIENTIFIC_NAME	Updated scientific name	Uppdaterat vetenskapligt namn		Bio
-bvol_size_class	UPDATED_SIZCL	Updated size class	Uppdaterad storleksklass		Bio
-bvol_ref_list	UPDATED_SIZRF	Updated size class reference list	Uppdaterad storleksreferens-lista		Bio
-bvol_aphia_id	UPDATED_APHIA_ID	Updated AphiaID	Uppdaterat AphiaID		Bio

@@ -1,0 +1,10 @@
+taxon_name_from	taxon_name_to	Note
+Coscinodiscophyceae	Bacillariophyta	
+Dictyocha speculum	Octactis speculum	
+Gymnodinium vestificii	Gymnodinium vestifici	
+Kathablepharis remigera	Katablepharis remigera	
+Monoraphidium arcuatum	Ankistrodesmus arcuatus	
+Synedra ulna	Ulnaria ulna	
+TetraÃ«dron minimum	Tetraedron minimum	
+Tetraëdron minimum	Tetraedron minimum	
+Amylax triacantha var. triacantha	Amylax triacantha	

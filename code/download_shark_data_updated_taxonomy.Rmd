@@ -175,42 +175,172 @@ if(nrow(datasets_phytoplankton) > 0) {
 
 # Dyntaxa Info
 
-shark_species_list = read.delim(file.path(sharkDir, params$shark_species), sep = "\t", header = TRUE) %>%
+phylum = read.delim(file.path(sharkDir, params$shark_species), sep = "\t", header = TRUE) %>%
   dplyr::select(Taxon.id,
+                Taxontyp,
                 Gällande.namn,
                 Klass,
                 Ordning,
                 Familj,
                 Släkte,
+                Taxonomisk.hierarki
+                ) %>%
+  filter(Taxontyp == "phylum")
+
+shark_species_list = read.delim(file.path(sharkDir, params$shark_species), sep = "\t", header = TRUE) %>%
+  dplyr::select(Taxon.id,
+                Taxontyp,
+                Gällande.namn,
+                Klass,
+                Ordning,
+                Familj,
+                Släkte,
+                Taxonomisk.hierarki
                 ) %>%
   dplyr::rename(dyntaxa_id=Taxon.id,
                 "taxon_name" = Gällande.namn,
                 "taxon_class" = Klass,
                 "taxon_order" = Ordning,
                 "taxon_family" = Familj,
-                "taxon_genus" = Släkte)
+                "taxon_genus" = Släkte) %>%
+  mutate("taxon_kingdom" = word(Taxonomisk.hierarki, 1, sep = fixed(' - ')),
+         "taxon_phylum" = NA) %>%
+  dplyr::relocate(taxon_kingdom, .before = taxon_class) %>%
+  dplyr::relocate(taxon_phylum, .before = taxon_class)
+
+species = shark_species_list %>%
+  filter(Taxontyp == "species") %>%
+  select(taxon_name) %>%
+  mutate(taxon_species = taxon_name)
+
+species_form = shark_species_list %>%
+  filter(Taxontyp == "variety" | Taxontyp == "form") %>%
+  select(Taxontyp, taxon_name, -Taxontyp) %>%
+  mutate("taxon_species" = word(taxon_name, 1,2))
+
+species = rbind(species, species_form)
+
+# Insert species
+
+shark_species_list = shark_species_list %>%
+  left_join(species) %>%
+  dplyr::relocate(taxon_species, .after = taxon_genus) %>%
+  dplyr::select(-Taxontyp)
+
+# Insert phylum
+for (i in 1:nrow(phylum)) {
+  sel = phylum[i,3]
+  for (j in 1:nrow(shark_species_list)) {
+    if (grepl(sel, shark_species_list$Taxonomisk.hierarki[j])) {
+      shark_species_list$taxon_phylum[j] = sel
+    }
+  }
+}
+
+shark_species_list = shark_species_list %>%
+  dplyr::select(-Taxonomisk.hierarki,
+                -taxon_name)
 
 # WoRMS info
 
-taxa_worms = read.delim(file.path(sharkDir, params$worms_species), sep = "\t", header = TRUE)%>%
+taxa_worms = read.delim(file.path(sharkDir, params$worms_species), sep = "\t", header = TRUE) %>%
   dplyr::select(aphia_id,
+                rank,
                 scientific_name,
+                kingdom,
+                phylum,
                 class,
                 order,
                 family,
                 genus) %>%
   dplyr::rename("taxon_name" = scientific_name,
+                "worms_kingdom" = kingdom,
+                "worms_phylum" = phylum,
                 "worms_class" = class,
                 "worms_order" = order,
                 "worms_family" = family,
-                "worms_genus" = genus)
+                "worms_genus" = genus) %>%
+  distinct() 
 
-shark_species_list = shark_species_list %>%
-  left_join(taxa_worms) %>%
-  select(-taxon_name)
+worms_species = taxa_worms %>%
+  filter(rank == "Species") %>%
+  select(taxon_name) %>%
+  mutate(worms_species = taxon_name)
+
+worms_species_form = taxa_worms %>%
+  filter(rank == "Variety" | rank == "Forma") %>%
+  select(taxon_name) %>%
+  mutate("worms_species" = word(taxon_name, 1,2))
+
+worms_species = rbind(worms_species, worms_species_form)
+
+# Insert species
+
+taxa_worms = taxa_worms %>%
+  left_join(worms_species) %>%
+  dplyr::relocate(worms_species, .after = worms_genus) %>%
+  dplyr::select(-rank, -taxon_name)
+
+# Translate info
+
+translate_taxa = read.delim(file.path(sharkDir, "translate_taxa.txt"), sep = "\t", header = TRUE) %>%
+  filter(!taxon_name_from == "Coscinodiscophyceae") # Hardcoded to correct for PR2 5.01.
+translate_aphiaid = read.delim(file.path(sharkDir, "translate_aphiaid.txt"), sep = "\t", header = TRUE)
+
+# Translate incorrect names
+
+# Join the data_shark_phytoplankton with the translate_taxa data frame
+data_shark_phytoplankton <- left_join(data_shark_phytoplankton, translate_taxa, by = c("scientific_name" = "taxon_name_from"))
+
+# Replace scientific_name with taxon_name_to where available, else keep original name
+data_shark_phytoplankton <- data_shark_phytoplankton %>%
+  mutate(scientific_name = if_else(!is.na(taxon_name_to), taxon_name_to, scientific_name)) %>%
+  select(-taxon_name_to)
+
+# Join the df with translate_aphiaid data frame and replace dyntaxa_id with dyntaxa_id_to where available
+data_shark_phytoplankton <- left_join(data_shark_phytoplankton, translate_aphiaid, by = c("scientific_name" = "taxon_name_from")) %>%
+  mutate(dyntaxa_id = if_else(!is.na(dyntaxa_id_to), dyntaxa_id_to, dyntaxa_id)) %>%
+  select(-dyntaxa_id_to)
+
+# Replace aphia_id with aphiaid_to where available
+data_shark_phytoplankton <- data_shark_phytoplankton %>%
+  mutate(aphia_id = if_else(!is.na(aphiaid_to), aphiaid_to, aphia_id)) %>%
+  select(-aphiaid_to)
+
+# Join taxonomy with data, hardcoded renaming of Coscinodiscophyceae and Mediophyceae
 
 data_shark_phytoplankton = data_shark_phytoplankton %>%
-  left_join(shark_species_list)
+  left_join(shark_species_list) %>%
+  left_join(taxa_worms) %>%
+  filter(!scientific_name == "Micromonas pusilla") %>%
+  mutate(aphia_id = na_if(aphia_id, -9999)) %>%
+  mutate(dyntaxa_id = na_if(dyntaxa_id, -9999)) %>%
+  select(-Note.x,-Note.y) %>%
+  mutate(taxon_class = gsub("^Bacillariophyta, classis incertae sedis$",
+                            "Mediophyceae",
+                            taxon_class)) %>%
+  mutate(taxon_order = gsub("^Bacillariophyta, ordo incertae sedis$",
+                            "Thalassiosirales",
+                            taxon_order)) %>%
+  mutate(taxon_family = gsub("^Bacillariophyta, familia incertae sedis$",
+                            "Thalassiosiraceae",
+                            taxon_family)) %>%
+  mutate(taxon_class = gsub("^Noctilucea$",
+                            "Noctilucophyceae",
+                            taxon_class)) %>%
+  mutate(taxon_class = gsub("^Coscinodiscophyceae$",
+                            "Coscinodiscophyceae + Mediophyceae",
+                            taxon_class)) %>%
+  mutate(taxon_class = gsub("^Mediophyceae$",
+                            "Coscinodiscophyceae + Mediophyceae",
+                            taxon_class)) %>%
+  mutate(new_class = if_else(taxon_class == "Coscinodiscophyceae + Mediophyceae", taxon_class, worms_class)) %>%
+  dplyr::select(-worms_class) %>%
+  dplyr::rename(worms_class = new_class) %>%
+  dplyr::relocate(worms_class, .before = worms_order)
+
+test = data_shark_phytoplankton %>%
+  filter(taxon_class == "Coscinodiscophyceae + Mediophyceae")
 ```
 
 ## Download picoplankton data from SHARKdata 

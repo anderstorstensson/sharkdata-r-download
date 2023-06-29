@@ -1,0 +1,16 @@
+taxon_name_from	dyntaxa_id_to	aphiaid_to	Note
+Amylax triacantha	238212	110007	
+Ankistrodesmus arcuatus	238753	575733	
+Bacillariophyta	5000058	148898	
+Diplopsalis	1010592	109515	
+Flagellates	-9999	-9999	
+Gymnodinium vestifici	238358	109837	
+Katablepharis remigera	238625	627117	
+Octactis speculum	237177	1310442	
+Pseudo-nitzschia delicatissima	237678	149153	
+Scrippsiella	1010578	109545	
+Tetraedron minimum	257945	178956	
+Ulnaria ulna	262369	447744	
+Volvocales	3000506	732333	
+Tetraëdron minimum	257945	178956	
+Oblea rotunda	238237	110155	
