@@ -4,8 +4,8 @@ authors:
 - family-names: "Torstensson"
   given-names: "Anders"
   orcid: "https://orcid.org/0000-0002-8283-656X"
-title: "Download data from the SHARKdata API (https://sharkdata.smhi.se/) using R"
-version: 1.0
-doi: 10.5281/zenodo.8096048
-date-released: 2023-06-29
+title: "Access Swedish oceanographic monitoring data using the SHARKdata API (https://sharkdata.smhi.se/) in R"
+version: 1.1
+doi: 10.5281/zenodo.8096047
+date-released: 2023-08-04
 url: "https://github.com/anderstorstensson/sharkdata-r-download"
