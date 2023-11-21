@@ -45,3 +45,9 @@ data/shark_chlorophyll/*.txt
 data/shark_physchem/*.txt
 data/shark_phytoplankton/*.txt
 data/shark_picoplankton/*.txt
+
+# Dyntaxa credentials
+code/fun/dyntaxa_subscription_key.R
+
+# Old code
+code/fun/old/
