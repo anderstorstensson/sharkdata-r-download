@@ -1,0 +1,18 @@
+﻿BASIN_NR	location_sea_basin
+1	01 - Bottenviken
+2	02 - Norra Kvarken
+3	03 - Bottenhavet
+4	04 - Ålands hav
+5	05 - NA
+6	06 - Finska viken
+7	07 - Norra Gotlandshavet
+8	08 - Västra Gotlandshavet
+9	09 - Östra Gotlandshavet
+10	10 - Rigabukten
+11	11 - Gdanskbukten
+12	12 - Bornholmshavet och Hanöbukten
+13	13 - Arkonahavet och Södra Öresund
+14	14 - Bälthavet
+15	15 - Öresund
+16	16 - Kattegatt
+17	17 - Skagerrak
