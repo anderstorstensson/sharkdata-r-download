@@ -1,25 +1,57 @@
-# Install and load required packages
-# install.packages("dplyr")
-# install.packages("jsonlite")
-# install.packages("sf")
-
 library(tidyverse)
 library(sf)
 library(jsonlite)
 
-# Function to load sharkdata
+#' Load all dataset names available at sharkdata from SMHI
+#'
+#' This function loads all datasets listed in SHARKweb/sharkdata at SMHI using the API.
+#'
+#' @return A data frame containing all datasets available in sharkdata.
+#'
+#'#' @examples
+#' \dontrun{
+#' all_dataset_names <- load_sharkdata()
+#' }
+#'
+#' @export
 load_sharkdata <- function() {
   fromJSON('https://sharkdata.smhi.se/datasets/list.json')
 }
 
-# Function for listing available dataset types
+#' List available dataset types
+#'
+#' This function lists the available dataset types from the sharkdata API.
+#'
+#' @return A vector of unique dataset types.
+#'
+#'#' @examples
+#' \dontrun{
+#' all_dataset_types <- load_dataset_types()
+#' }
+#'
+#' @export
 load_dataset_types <- function() {
   datasets <- load_sharkdata()
   dataset_types <- unique(datasets$datatype)
   return(dataset_types)
 }
 
-# Function for loading available dataset names
+#' Load dataset names based on type, year, and data deliverer
+#'
+#' This function gets dataset names fron the sharkdata API based on the specified data type, year, and data deliverer.
+#'
+#' @param dataset_type The type of dataset to load.
+#' @param year The year to filter datasets (default NA results in all available years).
+#' @param data_deliverer The data deliverer (code) to filter datasets (default is NA, results in all deliverers). See http://smhi.se/oceanografi/oce_info_data/shark_web/downloads/codelist_SMHI.xlsx for available codes.
+#' @return A data frame containing filtered dataset names.
+#'
+#' @examples
+#' \dontrun{
+#' load_dataset_names("Zoobenthos")
+#' load_dataset_names("Phytoplankton", year = 2012:2020, data_deliverer = c("SMHI", "UMSC"))
+#' }
+#'
+#' @export
 load_dataset_names <- function(dataset_type, year = NA, data_deliverer = NA) {
   datasets <- load_sharkdata()
   
@@ -31,7 +63,15 @@ load_dataset_names <- function(dataset_type, year = NA, data_deliverer = NA) {
   return(filtered_datasets)
 }
 
-# Function to filter datasets based on year
+#' Filter datasets based on year
+#'
+#' This internal function filters datasets based on the specified year.
+#'
+#' @param datasets The input datasets to filter.
+#' @param year The year to filter datasets.
+#' @return A filtered data frame.
+#'
+#' @keywords internal
 year_filter <- function(datasets, year) {
   if (!any(is.na(year))) {
     datasets %>% filter(grepl(paste(year, collapse="|"), dataset_name))
@@ -40,7 +80,15 @@ year_filter <- function(datasets, year) {
   }
 }
 
-# Function to filter datasets based on data deliverer
+#' Filter datasets based on data deliverer
+#'
+#' This internal function filters datasets based on the specified data deliverer.
+#'
+#' @param datasets The input datasets to filter.
+#' @param data_deliverer The data deliverer to filter datasets.
+#' @return A filtered data frame.
+#'
+#' @keywords internal
 data_deliverer_filter <- function(datasets, data_deliverer) {
   if (!any(is.na(data_deliverer))) {
     datasets %>% filter(grepl(paste(data_deliverer, collapse="|"), dataset_name))
@@ -49,7 +97,33 @@ data_deliverer_filter <- function(datasets, data_deliverer) {
   }
 }
 
-# Function for downloading datasets
+#' Download and process shark datasets
+#'
+#' This function downloads and processes shark datasets based on the specified dataset names.
+#'
+#' @param dataset_names A character vector specifying the names of the datasets to be downloaded and processed.
+#'
+#' @return A processed data frame containing the shark datasets.
+#'
+#' @details
+#' This function performs the following steps:
+#' 1. Downloads datasets with the specified names.
+#' 2. Reads and processes the downloaded data.
+#' 3. Converts columns to appropriate types.
+#' 4. Adds Dyntaxa higher taxonomy information from stored file. Current taxonomy can be accessed via the Dyntaxa API by, see update_dyntaxa_taxonomy()
+#' 5. Adds WoRMS higher taxonomy information from stored file. Current taxonomy can be accessed via the WoRMS API by, see update_dyntaxa_taxonomy()
+#' 6. Extracts and adds geographical information (e.g. location_sea_basin) from coordinates.
+#'
+#' @seealso \code{\link{load_dataset_names}}, \code{\link{update_dyntaxa_taxonomy}}, \code{\link{update_worms_taxonomy}}
+#'
+#' @examples
+#' \dontrun{
+#' datasets <- load_dataset_names("Phytoplankton")
+#' dataset_names <- unique(datasets$dataset_name)
+#' download_sharkdata(dataset_names)
+#' }
+#'
+#' @export
 download_sharkdata <- function(dataset_names) {
   datasets <- load_sharkdata()
   filtered_datasets <- datasets %>%
@@ -111,7 +185,14 @@ download_sharkdata <- function(dataset_names) {
   return(data_shark)
 }
 
-# Helper function to download file
+#' Helper function to download file
+#'
+#' This internal function downloads a file based on the specified dataset name.
+#'
+#' @param dataset_name The name of the dataset to download.
+#' @return A temporary file path.
+#'
+#' @keywords internal
 download_file <- function(dataset_name) {
   temp <- tempfile()
   download.file(paste("https://sharkdata.smhi.se/datasets/",
@@ -124,7 +205,16 @@ download_file <- function(dataset_name) {
   return(temp)
 }
 
-# Helper function to read data
+#' Helper function to read data
+#'
+#' This internal function reads and converts data from a temporary file.
+#'
+#' @param temp The temporary file path.
+#' @param filtered_datasets The filtered datasets.
+#' @param dataset_name The name of the dataset.
+#' @return A data frame containing the read and converted data.
+#'
+#' @keywords internal
 read_data <- function(temp, filtered_datasets, dataset_name) {
   dataset_file_name <- filtered_datasets$dataset_file_name[filtered_datasets$dataset_name == dataset_name]
   
@@ -137,14 +227,31 @@ read_data <- function(temp, filtered_datasets, dataset_name) {
   return(data_ix)
 }
 
-# Helper function to validate dataset names
+#' Helper function to validate dataset names
+#'
+#' This internal function validates whether all specified dataset names are in the database.
+#'
+#' @param filtered_datasets A data frame of filtered datasets.
+#' @param dataset_names A vector of dataset names to validate.
+#' @return NULL. It stops the execution with an error message if validation fails.
+#'
+#' @keywords internal
 validate_dataset_names <- function(filtered_datasets, dataset_names) {
   if (!all(dataset_names %in% filtered_datasets$dataset_name)) {
     stop("Not all dataset names are in the database")
   }
 }
 
-# Function to load higher taxonomy from Dyntaxa file
+#' Load higher taxonomy from Dyntaxa file
+#'
+#' This internal function loads higher taxonomy information from the Dyntaxa file.
+#'
+#' @param dyntaxa_id_input A vector of Dyntaxa IDs to filter the higher taxonomy.
+#' @return A data frame containing higher taxonomy information.
+#'
+#' @seealso \code{\link{load_worms_taxonomy}}, \code{\link{update_dyntaxa_taxonomy}}, \code{\link{update_worms_taxonomy}}
+#'
+#' @keywords internal
 load_dyntaxa_taxonomy <- function(dyntaxa_id_input) {
   shark_species_list <- read_species_list("shark_species_list_utf8.txt")
   species <- gather_species_info(shark_species_list)
@@ -154,7 +261,14 @@ load_dyntaxa_taxonomy <- function(dyntaxa_id_input) {
   return(shark_species_list)
 }
 
-# Function to read and convert species list
+#' Read and convert species list
+#'
+#' This internal function reads and converts a species list from the specified file.
+#'
+#' @param filename The name of the file containing the species list.
+#' @return A data frame containing the species list with converted columns.
+#'
+#' @keywords internal
 read_species_list <- function(filename) {
   read_delim(file.path("config/shark_download_config", filename), 
              delim = "\t", 
@@ -177,7 +291,14 @@ read_species_list <- function(filename) {
            "taxon_genus" = Släkte)
 }
 
-# Function to gather species information
+#' Gather species information
+#'
+#' This internal function gathers species information from the shark species list.
+#'
+#' @param shark_species_list A data frame containing shark species information.
+#' @return A data frame containing gathered species information.
+#'
+#' @keywords internal
 gather_species_info <- function(shark_species_list) {
   species <- shark_species_list %>%
     filter(Taxontyp == "species") %>%
@@ -196,7 +317,15 @@ gather_species_info <- function(shark_species_list) {
   return(species)
 }
 
-# Helper function to add species information to species list
+#' Helper function to add species information to species list
+#'
+#' This internal function adds species information to the shark species list.
+#'
+#' @param shark_species_list A data frame containing shark species information.
+#' @param species A data frame containing gathered species information.
+#' @return A data frame containing the shark species list with added species information.
+#'
+#' @keywords internal
 add_species_info <- function(shark_species_list, species) {
   shark_species_list <- shark_species_list %>%
     left_join(species, by = "taxon_name") %>%
@@ -206,7 +335,16 @@ add_species_info <- function(shark_species_list, species) {
   return(shark_species_list)
 }
 
-# Function to add higher taxonomy from WoRMS file
+#' Load higher taxonomy from WoRMS file
+#'
+#' This internal function loads higher taxonomy information from the stored WoRMS taxonomy file.
+#'
+#' @param aphia_id_input A vector of Aphia IDs to filter the higher taxonomy.
+#' @return A data frame containing higher taxonomy information.
+#'
+#' @seealso \code{\link{load_dyntaxa_taxonomy}}, \code{\link{update_dyntaxa_taxonomy}}, \code{\link{update_worms_taxonomy}}
+#'
+#' @keywords internal
 load_worms_taxonomy <- function(aphia_id_input) {
   taxa_worms <- read_delim(file.path("config/shark_download_config", "taxa_worms_utf8.txt"),
                            delim = "\t",
@@ -233,7 +371,14 @@ load_worms_taxonomy <- function(aphia_id_input) {
   return(taxa_worms)
 }
 
-# Function to gather WoRMS species information
+#' Gather WoRMS species information
+#'
+#' This internal function gathers WoRMS species information from the taxa_worms data frame.
+#'
+#' @param taxa_worms A data frame containing WoRMS species information.
+#' @return A data frame containing gathered WoRMS species information.
+#'
+#' @keywords internal
 gather_worms_species_info <- function(taxa_worms) {
   species <- taxa_worms %>%
     filter(rank == "Species") %>%
@@ -243,7 +388,15 @@ gather_worms_species_info <- function(taxa_worms) {
   return(species)
 }
 
-# Function to add WoRMS species information to taxa list
+#' Function to add WoRMS species information to taxa list
+#'
+#' This internal function adds WoRMS species information to the taxa_worms data frame.
+#'
+#' @param taxa_worms A data frame containing WoRMS taxonomy information.
+#' @param species A data frame containing gathered WoRMS species information.
+#' @return A data frame containing the taxa_worms with added WoRMS species information.
+#'
+#' @keywords internal
 add_worms_species_info <- function(taxa_worms, species) {
   taxa_worms <- taxa_worms %>%
     left_join(species, by = "aphia_id") %>%
@@ -253,9 +406,27 @@ add_worms_species_info <- function(taxa_worms, species) {
   return(taxa_worms)
 }
 
-
-
-# Function to add geographical information from coordinates
+#' Get geographical information from coordinates
+#'
+#' This function enriches the provided data with geographical information based on latitude and longitude coordinates in the Baltic Sea, Kattegat and Skagerrak.
+#'
+#' @param latitude_dd A numeric vector representing latitude coordinates in decimal degrees.
+#' @param longitude_dd A numeric vector representing longitude coordinates in decimal degrees.
+#'
+#' @return A data frame containing the original coordinates with the added geographical information location_type_area, location_svar_sea_area_name and location_sea_basin.
+#'
+#' @details
+#' The function reads shapefiles and basin names to assign geographical information to the dataset.
+#' It provides details about the location type area and the Svar Sea area name based on the given coordinates.
+#'
+#' @examples
+#' \dontrun{
+#' latitude <- c(58.25830, 58.59367, 63.49983)
+#' longitude <- c(11.43330, 18.23550, 19.81933)
+#' dataset_with_geo_info <- get_geographical_info(latitude, longitude)
+#' }
+#' 
+#' @export
 get_geographical_info <- function(latitude_dd, longitude_dd) {
 
   # Read shapefiles and list of basin names
@@ -263,6 +434,7 @@ get_geographical_info <- function(latitude_dd, longitude_dd) {
                    options = "ENCODING=WINDOWS-1252", 
                    quiet = TRUE)
   
+  # Read translation list of sea basin names
   basin_names <- read_delim(file.path("config/shark_download_config", "sea_basin_utf8.txt"), 
                             delim = "\t", 
                             col_names = TRUE, 
@@ -301,13 +473,38 @@ get_geographical_info <- function(latitude_dd, longitude_dd) {
   return(data_basin)
 }
 
-# Function to check if the dataset versions are up to date
+#' Check if dataset versions are up to date
+#'
+#' This function checks the status of dataset versions by comparing them with the latest available versions.
+#'
+#' @param dataset_file_name A character vector containing the dataset file names (with the .zip extension).
+#'
+#' @return A data frame indicating the status of dataset versions, including whether they are up to date.
+#'
+#' @details
+#' This function compares the provided dataset file names with the latest versions available in the sharkdata repository.
+#' It returns a data frame with information about each dataset, specifying whether it is up to date or not.
+#'
+#' @seealso \code{\link{load_dataset_names}}, \code{\link{download_sharkdata}}, \code{\link{update_data}}
+#'
+#' @examples
+#' # Example with a list of dataset file names
+#' \dontrun{
+#' datasets <- load_dataset_names("Phytoplankton")
+#' dataset_names <- unique(datasets$dataset_name[1:5])
+#' data <- download_sharkdata(dataset_names)
+#' status_list <- check_data_version(data$dataset_file_name)
+#' }
+#' 
+#' @export
 check_data_version <- function(dataset_file_name) {
   dataset_name <- gsub("_version_.*", "", dataset_file_name)
   
+  # Load available datasets
   datasets <- load_sharkdata() %>%
     filter(dataset_name %in% dataset_name)
   
+  # Create a status list
   status_list <- data.frame(dataset_name = unique(dataset_name), 
                             dataset_file_name = unique(dataset_file_name),
                             up_to_date = unique(dataset_file_name) %in% datasets$dataset_file_name)
@@ -315,7 +512,26 @@ check_data_version <- function(dataset_file_name) {
   return(status_list)
 }
 
-# Function to update data if an updated version is available
+#' Function to update data if an updated version is available
+#'
+#' This function updates the data if an updated version is available at sharkdata by downloading the latest datasets.
+#'
+#' @param data A data frame containing the current data.
+#' @return A data frame with updated data if available.
+#'
+#' @seealso \code{\link{load_dataset_names}}, \code{\link{download_sharkdata}}, \code{\link{check_data_version}}
+#'
+#' @examples
+#' # Assume you have a sharkdata dataset named 'data' loaded in your R environment
+#' # with a 'dataset_file_name' column indicating the file name of the dataset.
+#' \dontrun{
+#' datasets <- load_dataset_names("Phytoplankton")
+#' dataset_names <- unique(datasets$dataset_name[1:5])
+#' data <- download_sharkdata(dataset_names)
+#' updated_data <- update_data(data)
+#' }
+#'
+#' @export
 update_data <- function(data) {
   
   status_list <- check_data_version(data$dataset_file_name)
@@ -339,7 +555,15 @@ update_data <- function(data) {
   }
 }
 
-# Function to filter outdated datasets
+#' Function to filter outdated datasets
+#'
+#' This internal function filters out outdated datasets from the current data based on the provided list of datasets to update.
+#'
+#' @param data A data frame containing the current data.
+#' @param datasets_to_update A data frame containing information about datasets that need to be updated.
+#' @return A filtered data frame excluding outdated datasets.
+#'
+#' @keywords internal
 filter_outdated_datasets <- function(data, datasets_to_update) {
   data %>%
     filter(!dataset_name %in% datasets_to_update$dataset_name)

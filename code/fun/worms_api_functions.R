@@ -1,6 +1,26 @@
 library(worrms)
 library(tidyverse)
 
+#' Update WoRMS Taxonomy
+#'
+#' This function collects WoRMS (World Register of Marine Species) taxonomy information for a given set of Aphia IDs.
+#' The data is organized into a full taxonomic table that can be joined with data downloaded from sharkdata
+#'
+#' @param aphiaid A numeric vector containing Aphia IDs for which WoRMS taxonomy needs to be updated.
+#'
+#' @return A data frame containing updated WoRMS taxonomy information.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Update WoRMS taxonomy for a set of Aphia IDs
+#' updated_taxonomy <- update_worms_taxonomy(c(123, 456, 789))
+#' print(updated_taxonomy)
+#' }
+#'
+#' @seealso [WoRMS API Documentation](http://www.marinespecies.org/rest/), \code{\link{download_sharkdata}}
+#'
 update_worms_taxonomy <- function(aphiaid) {
   worms_class <- data.frame()
   for (ids in aphiaid) {

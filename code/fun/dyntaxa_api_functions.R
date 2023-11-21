@@ -2,6 +2,29 @@ library(tidyverse)
 library(jsonlite)
 library(httr)
 
+#' Get taxonomic information from Dyntaxa for specified taxon IDs
+#'
+#' This function queries the Dyntaxa API to retrieve taxonomic information for the specified taxon IDs.
+#' It constructs a request with the provided taxon IDs, sends the request to the Dyntaxa API, and
+#' processes the response to return taxonomic information in a data frame.
+#'
+#' @param taxon_ids A vector of numeric taxon IDs (Dyntaxa ID) for which taxonomic information is requested.
+#' @param subscription_key A character string containing the subscription key for accessing the Dyntaxa API. A key is provided for registered users at [Artdatabanken](https://api-portal.artdatabanken.se/).
+#'
+#' @return A data frame containing taxonomic information for the specified taxon IDs.
+#'   Columns include taxonId, names, category, rank, isRecommended, and parentTaxonId.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get taxonomic information for taxon IDs 238366 and 1010380
+#' taxon_info <- get_dyntaxa_taxonomy(c(238366, 1010380), "your_subscription_key")
+#' print(taxon_info)
+#'}
+#'
+#' @seealso [Dyntaxa API Documentation](https://api-portal.artdatabanken.se/)
+#'
 get_dyntaxa_taxonomy <- function(taxon_ids, subscription_key) {
   if (length(taxon_ids) == 0) {
     stop("taxon_ids should not be empty.")
@@ -39,6 +62,28 @@ get_dyntaxa_taxonomy <- function(taxon_ids, subscription_key) {
   }
 }
 
+#' Get parent taxon IDs for specified taxon IDs from Dyntaxa
+#'
+#' This function queries the Dyntaxa API to retrieve parent taxon IDs for the specified taxon IDs.
+#' It constructs a request with the provided taxon IDs, sends the request to the Dyntaxa API, and
+#' processes the response to return a list of parent taxon IDs.
+#'
+#' @param taxon_ids A vector of numeric taxon IDs for which parent taxon IDs are requested.
+#' @param subscription_key A character string containing the subscription key for accessing the Dyntaxa API. A key is provided for registered users at [Artdatabanken](https://api-portal.artdatabanken.se/).
+#'
+#' @return A list containing parent taxon IDs corresponding to the specified taxon IDs.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get parent taxon IDs for taxon IDs 238366 and 1010380
+#' parent_ids <- get_dyntaxa_parent_ids(c(238366, 1010380), "your_subscription_key")
+#' print(parent_ids)
+#'}
+#'
+#' @seealso [Dyntaxa API Documentation](https://www.artdatabanken.se/api/taxonservice/docs/resources/Taxa-Parentids)
+#'
 get_dyntaxa_parent_ids <- function(taxon_ids, subscription_key) {
   if (length(taxon_ids) == 0) {
     stop("taxon_ids should not be empty.")
@@ -79,7 +124,28 @@ get_dyntaxa_parent_ids <- function(taxon_ids, subscription_key) {
   return(results)
 }
 
-# Full taxonomy table
+#' Construct Dyntaxa Taxonomy Table
+#'
+#' This function constructs a taxonomy table based on Dyntaxa parent taxon IDs.
+#' It queries the Dyntaxa API to fetch taxonomy information and organizes the data into a hierarchical table.
+#'
+#' @param parent_ids A list containing parent taxon IDs for which taxonomy information is requested.
+#' @param subscription_key A character string containing the subscription key for accessing the Dyntaxa API. A key is provided for registered users at [Artdatabanken](https://api-portal.artdatabanken.se/).
+#'
+#' @return A data frame representing the constructed taxonomy table.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Construct Dyntaxa taxonomy table for taxon IDs 238366 and 1010380
+#' parent_ids <- get_dyntaxa_parent_ids(c(238366, 1010380), "your_subscription_key")
+#' taxonomy_table <- construct_dyntaxa_table(parent_ids), "your_subscription_key")
+#' print(taxonomy_table)
+#' }
+#'
+#' @seealso [Dyntaxa API Documentation](https://www.artdatabanken.se/api/taxonservice/docs/resources/Taxa)
+#'
 construct_dyntaxa_table <- function(parent_ids, subscription_key) {
   if (!is.list(parent_ids)) {
     parent_ids <- list(parent_ids)
@@ -186,8 +252,14 @@ construct_dyntaxa_table <- function(parent_ids, subscription_key) {
   return(taxa_filtered)
 }
 
-
-# Helper function
+#' Function to fill NA values below the first non-NA value in a vector
+#'
+#' This internal function fills NA values below the first non-NA value in a vector.
+#'
+#' @param x A vector.
+#' @return A vector with NAs filled below the first non-NA value.
+#'
+#' @keywords internal
 fill_na_below_first_non_na <- function(x) {
   non_na_values <- x[!is.na(x)]
   if (length(non_na_values) > 0) {
@@ -197,7 +269,28 @@ fill_na_below_first_non_na <- function(x) {
   return(x)
 }
 
-# Wrapped function for updating taxonomy data
+#' Update Dyntaxa Taxonomy
+#'
+#' This function updates Dyntaxa taxonomy records based on a list of Dyntaxa taxon IDs.
+#' It collects parent IDs from Dyntaxa, retrieves full taxonomy records, and organizes 
+#' the data into a full taxonomic table that can be joined with data downloaded from sharkdata.
+#'
+#' @param dyntaxa_ids A vector of Dyntaxa taxon IDs to update.
+#' @param subscription_key A character string containing the subscription key for accessing the Dyntaxa API. A key is provided for registered users at [Artdatabanken](https://api-portal.artdatabanken.se/).
+#'
+#' @return A data frame representing the updated Dyntaxa taxonomy table.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Update Dyntaxa taxonomy for taxon IDs 238366 and 1010380
+#' updated_taxonomy <- update_dyntaxa_taxonomy(c(238366, 1010380), "your_subscription_key")
+#' print(updated_taxonomy)
+#' }
+#'
+#' @seealso [Dyntaxa API Documentation](https://www.artdatabanken.se/api/taxonservice/docs/resources/Taxa), \code{\link{download_sharkdata}}
+#'
 update_dyntaxa_taxonomy <- function(dyntaxa_ids, subscription_key) {
   cat("Collecting parent IDs from Dyntaxa\n")
   parents_ids <- get_dyntaxa_parent_ids(dyntaxa_ids, subscription_key)
@@ -218,41 +311,33 @@ update_dyntaxa_taxonomy <- function(dyntaxa_ids, subscription_key) {
   return(tax_table_shark)
 }
 
-# Get list of best matches from name
-best_match_dyntaxa <- function(searchString, subscriptionKey, searchFields = 'Both', isRecommended = 'NotSet', 
-                               isOkForObservationSystems = 'NotSet', culture = 'sv_SE', 
-                               page = 1, pageSize = 100) {
-  
-  url <- "https://api.artdatabanken.se/taxonservice/v1/taxa/search"
-  headers <- c(
-    'Cache-Control' = 'no-cache',
-    'Ocp-Apim-Subscription-Key' = subscriptionKey
-  )
-  
-  query <- list(
-    searchString = searchString,
-    searchFields = searchFields,
-    isRecommended = isRecommended,
-    isOkForObservationSystems = isOkForObservationSystems,
-    culture = culture,
-    page = page,
-    pageSize = pageSize
-  )
-  
-  response <- GET(url, query = query, add_headers(.headers = headers))
-  
-  result <- list(
-    statusCode = status_code(response),
-    responseBody = fromJSON(content(response, "text"))
-  )
-  
-  return(result)
-}
-
-
-
-# Get t
-match_dyntaxa <- function(taxon_names, subscriptionKey, searchFields = 'Both', isRecommended = 'NotSet', 
+#' Match Dyntaxa Taxon Names
+#'
+#' This function matches a list of taxon names against the Dyntaxa API and retrieves the best matches along with their taxon IDs.
+#'
+#' @param taxon_names A vector of taxon names to match.
+#' @param subscription_key A character string containing the subscription key for accessing the Dyntaxa API. A key is provided for registered users at [Artdatabanken](https://api-portal.artdatabanken.se/).
+#' @param searchFields A character string indicating the search fields. Defaults to 'Both'.
+#' @param isRecommended A character string indicating whether the taxon is recommended. Defaults to 'NotSet'.
+#' @param isOkForObservationSystems A character string indicating whether the taxon is suitable for observation systems. Defaults to 'NotSet'.
+#' @param culture A character string indicating the culture. Defaults to 'sv_SE'.
+#' @param page An integer specifying the page number for pagination. Defaults to 1.
+#' @param pageSize An integer specifying the page size for pagination. Defaults to 100.
+#'
+#' @return A data frame containing the search pattern, taxon ID, and best match for each taxon name.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Match taxon names against Dyntaxa API
+#' matched_taxa <- match_dyntaxa(c("Homo sapiens", "Canis lupus"), "your_subscription_key")
+#' print(matched_taxa)
+#' }
+#'
+#' @seealso [Dyntaxa API Documentation](https://www.artdatabanken.se/api/taxonservice/docs/resources/Taxa)
+#'
+match_dyntaxa <- function(taxon_names, subscription_key, searchFields = 'Both', isRecommended = 'NotSet', 
                           isOkForObservationSystems = 'NotSet', culture = 'sv_SE', 
                           page = 1, pageSize = 100) {
   
@@ -262,7 +347,7 @@ match_dyntaxa <- function(taxon_names, subscriptionKey, searchFields = 'Both', i
   url <- "https://api.artdatabanken.se/taxonservice/v1/taxa/names"
   headers <- c(
     'Cache-Control' = 'no-cache',
-    'Ocp-Apim-Subscription-Key' = subscriptionKey
+    'Ocp-Apim-Subscription-Key' = subscription_key
   )
   
   result_list <- map(taxon_names, ~{
@@ -296,4 +381,3 @@ match_dyntaxa <- function(taxon_names, subscriptionKey, searchFields = 'Both', i
   result_df <- do.call(rbind, result_list)
   return(result_df)
 }
-
