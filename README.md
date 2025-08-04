@@ -1,3 +1,8 @@
+# Repository Archived
+
+This repository has been archived as SHARKdata has been replaced by a new API. For accessing data via the new API, please refer to [SHARK4R](https://github.com/sharksmhi/SHARK4R).
+
+
 # sharkdata-r-download
 Access physical-chemical, phytoplankton, picoplankton and chlorophyll data from the [SHARKdata](https://sharkdata.smhi.se/) API using R. The data are also available in the web-interface at [SHARKweb](https://sharkweb.smhi.se/hamta-data/).
 
